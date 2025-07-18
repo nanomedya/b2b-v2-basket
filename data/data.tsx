@@ -25,7 +25,7 @@ const TABLE_DATA = {
     //{ name: "1. Sanayi", key: "first_industry", sortable: false },
     { name: "İskonto", key: "discount", sortable: true },
     { name: "Liste Fiyatı", key: "list_price", sortable: false },
-    { name: "Liste Fiyatı TL", key: "list_price_tl", sortable: false },
+   // { name: "Liste Fiyatı TL", key: "list_price_tl", sortable: false },
     { name: "KDV Hariç", key: "price_excl_vat", sortable: false },
     { name: "KDV Dahil", key: "price_incl_vat", sortable: false },
     { name: "Merkez", key: "ankara", sortable: false },

@@ -378,9 +378,9 @@ const [selectedProduct, setSelectedProduct] = useState<RowsProps | null>(null);
                       {product.list_price}
                     </TableCell>
 
-                    <TableCell>
+                   {/* <TableCell> 
                       {product.list_price_tl}
-                    </TableCell>
+                    </TableCell> */}
 
                     <TableCell>
                       <Tooltip
@@ -446,19 +446,15 @@ const [selectedProduct, setSelectedProduct] = useState<RowsProps | null>(null);
                           <Minus />
                         </Button>
 
-                        <Input
-                          value={String(quantities[product.id] || 1)}
-                          isDisabled={!product.quantity}
-                          isInvalid={errors[product.id] || false}
-                          placeholder={`Stok: ${product.quantity}`}
-                          min={1}
-                          width={100}
-                          //max={product.quantity}
-                          //maxLength={3}
-                          className="text-center"
-                          //errorMessage={errors[product.id] ? "Stoktan olmayan bir değer girdiniz" : ""}
-                          onChange={(e) => handleQuantityChange(product.id, e.target.value)}
-                        />
+                       <input
+                        type="number"
+                        value={String(quantities[product.id] || 1)}
+                        min={1}
+                        max={product.quantity}
+                        disabled={!product.quantity}
+                        onChange={(e) => handleQuantityChange(product.id, e.target.value)}
+                        className={`w-14 text-center border-y border-gray-300 dark:border-slate-600 dark:bg-slate-800 dark:text-white outline-none`}
+                      />
 
                         <Button
                           onClick={() => {
