@@ -4,7 +4,7 @@ import GuestLayout from "@/app/components/Layouts/GuestLayout";
 import NavbarWrapper from "@/app/components/Items/NavbarWrapper";
 import { useAuth } from "@/context/AuthContext";
 import MyBreadCrumbs from "@/app/components/Items/MyBreadCrumbs";
-
+import { useRouter } from 'next/navigation';
 import {Image} from "@heroui/image";
 import {Tooltip} from "@heroui/tooltip";
 import {Checkbox} from "@heroui/checkbox";
@@ -12,8 +12,16 @@ import {Chip} from "@heroui/chip";
 import {  Table,  TableHeader,  TableBody,  TableColumn,  TableRow,  TableCell} from "@heroui/table";
 import {Button, ButtonGroup} from "@heroui/button";
 import {Card, CardHeader, CardBody, CardFooter} from "@heroui/card";
-import { useSelector } from "react-redux";
-import { RootState } from "@/redux/store";
+import { useDispatch,useSelector } from "react-redux";
+import { RootState,AppDispatch } from "@/redux/store";
+import { Modal, ModalContent, ModalHeader, ModalBody, ModalFooter } from "@heroui/modal";
+import { CheckCircle, XCircle } from "lucide-react";
+
+import {
+    orderBasketAsync,
+    removeFromBasketAsync,
+    fetchCurrentBasket
+} from "@/redux/basketSlice";
 
 import AddBasket from "@/app/components/Items/AddBasket";
 
@@ -21,58 +29,97 @@ import ChooseBasket from "@/app/components/Items/ChooseBasket";
 import MyStorage from "@/app/components/Elements/MyStorage";
 import StoriesBox from "@/app/components/Items/StoriesBox";
 import PageLoader from "@/app/components/Items/PageLoader";
+import { useMyAlert } from "@/context/MyAlertContext";
 
 export default function Basket(): JSX.Element {
-
+  const router = useRouter();
+  const dispatch = useDispatch<AppDispatch>();
   const { token, loading, currentBasketId } = useAuth();
   const basketState = useSelector((state: RootState) => state.basket);
-
+  const { showAlert } = useMyAlert();
   const [basketItems, setBasketItems] = useState<any[]>([]);
+  const [orderNo, setOrderNo] = useState<any>("");
   const [selectedItems, setSelectedItems] = useState<any[]>([]);
   const [cargoPrice, setCargoPrice] = useState<number>(25);
 
-  const depoData = [
-    {
-      title: "Ankara Depo",
-      brut: "6,608.36",
-      iskonto: "-247.04",
-      toplam: "6,361.32",
-      kdv: "1,272.26",
-      genelToplam: "7,633.58",
-      sevkiyatOptions: [
-        { value: "sirket-araci", label: "Şirket Aracı" },
-        { value: "kargo", label: "Kargo" },
-      ],
-      sevkiyatNote: null,
-    },
-    {
-      title: "İstanbul Depo",
-      brut: "10,716.34",
-      iskonto: "-1,042.35",
-      toplam: "9,673.99",
-      kdv: "1,934.80",
-      genelToplam: "11,608.79",
-      sevkiyatOptions: [
-        { value: "ist-kargo", label: "İst.Kargo" },
-      ],
-      sevkiyatNote: "Kargo peşin ödeme fatura tutarı 3500₺'dir.",
-    },
-  ];
+
+
+  const [isModalOpen, setModalOpen] = useState(false);
+  const [modalSuccess, setModalSuccess] = useState(false);
+  const [modalMessage, setModalMessage] = useState("");
+
+ const brutTotal = basketItems.reduce(
+  (acc, item) => acc + (item.product.list_price ?? item.product.price ?? 0) * (item.quantity ?? 1),
+  0
+);
+
+const iskontoTotal = basketItems.reduce(
+  (acc, item) => acc + (( item.product.price ?? 0) * (item.product.discount ?? 0)) * (item.quantity ?? 1),
+  0
+);
+
+const toplamTotal = basketItems.reduce(
+  (acc, item) => acc + (item.product.price ?? 0) * (item.quantity ?? 1),
+  0
+);
+
+const kdvTotal = toplamTotal * 0.2; // KDV %20 örnek
+
+const genelToplam = toplamTotal + kdvTotal + cargoPrice;
+
+// Yeni depoData oluştur
+const depoData = [
+  {
+    title: "Merkez Depo",
+    brut: brutTotal.toFixed(2),
+    iskonto: iskontoTotal.toFixed(2),
+    toplam: toplamTotal.toFixed(2),
+    kdv: kdvTotal.toFixed(2),
+    genelToplam: genelToplam.toFixed(2),
+    sevkiyatOptions: [
+      { value: "sirket-araci", label: "Şirket Aracı" },
+      { value: "kargo", label: "Kargo" },
+    ],
+    sevkiyatNote: null,
+  },
+];
+    const handleOrderBasket = () => {
+      if (token && currentBasketId) {
+      dispatch(orderBasketAsync({ token, currentBasketId }))
+        .unwrap()
+        .then((response) => {
+          console.log("Sipariş tamamlandı:", response);
+          setOrderNo(response.order_id);
+          setModalSuccess(true);
+          setModalMessage("Sipariş başarıyla oluşturuldu.");
+        })
+        .catch((error) => {
+          console.error("Sipariş sırasında hata:", error);
+          setModalSuccess(false);
+          setModalMessage(error.message || "Sipariş tamamlanamadı.");
+        })
+        .finally(() => {
+          setModalOpen(true);
+        });
+    }
+    };
 
 
   useEffect(() => {
+    
     setBasketItems(basketState.items);
     setSelectedItems(basketState.items.map((item: any) => item.product_id));
+  
   }, [basketState]);
 
-  // const handleRemove = (productId: number) => {
-  //   if (token && currentBasketId) {
-  //     dispatch(removeFromBasketAsync({ token, productId, currentBasketId }))
-  //       .unwrap()
-  //       .then(() => dispatch(fetchCurrentBasket({ token, currentBasketId })))
-  //       .catch((error: any) => showAlert("Oppss..!", error.message));
-  //   }
-  // };
+   const handleRemove = (productId: number) => {
+     if (token && currentBasketId) {
+       dispatch(removeFromBasketAsync({ token, productId, currentBasketId }))
+         .unwrap()
+         .then(() => dispatch(fetchCurrentBasket({ token, currentBasketId })))
+         .catch((error: any) => showAlert("Oppss..!", error.message));
+     }
+  };
 
   const toggleSelectAll = () => {
     if (selectedItems.length === basketItems.length) {
@@ -137,10 +184,11 @@ export default function Basket(): JSX.Element {
                           <TableColumn>{"KDV'li Tutar"}</TableColumn>
                           <TableColumn>Miktar</TableColumn>
                     
-                          <TableColumn>Bakiye</TableColumn>
-                          <TableColumn>İşlem</TableColumn>
+                           {/*<TableColumn>Bakiye</TableColumn>*/} 
+                          
                           <TableColumn>Tedarik</TableColumn>
                           <TableColumn>Merkez</TableColumn>
+                          <TableColumn>İşlem</TableColumn>
                         </TableHeader>
                         <TableBody>
                           {basketItems.map((item) => (
@@ -167,10 +215,10 @@ export default function Basket(): JSX.Element {
                                 </Tooltip>
                                 {item.product.title}
                               </TableCell>
-                              <TableCell>{item.product.brand}</TableCell>
-                              <TableCell>% {item.product.kdv}</TableCell>
-                              <TableCell>{item.product.listPrice ?? item.product.price}</TableCell>
-                              <TableCell>{item.product.listPriceWithKdv ?? item.product.price}</TableCell>
+                              <TableCell>{item.product.brand_rel.title}</TableCell>
+                              <TableCell>%{item.product.vat}</TableCell>
+                              <TableCell>{item.product.list_price ?? item.product.price}</TableCell>
+                              <TableCell>{item.product.price}</TableCell>
                               <TableCell>% {item.product.discount}</TableCell>
                               <TableCell>{item.product.price}</TableCell>
                               <TableCell>{item.product.total ?? item.product.price}</TableCell>
@@ -178,16 +226,16 @@ export default function Basket(): JSX.Element {
                               <TableCell>{item.product.price}</TableCell>
                               
                      
-                              <TableCell>{item.product?.balance}</TableCell>
+                             {/*<TableCell>{item.product?.balance}</TableCell> */} 
                               <TableCell>
-                                {item.product.stock > 1 ? (
+                                {item.product.stock > 0 ? (
                                   <Chip variant="dot" color="success">Var</Chip>
                                 ) : (
                                   <Chip variant="dot" color="danger">Yok</Chip>
                                 )}
                               </TableCell>
                               <TableCell>
-                                {item.product.stock_quantity > 1 ? (
+                                {item.product.stock_quantity > 0 ? (
                                   <Chip variant="dot" color="success">Var</Chip>
                                 ) : (
                                   <Chip variant="dot" color="danger">Yok</Chip>
@@ -209,10 +257,15 @@ export default function Basket(): JSX.Element {
                 )}
               </div>
             </div>
-            <div className="form_wrapper w-full grid grid-cols-3 lg:grid-cols-4 gap-3">
-              {depoData.map((depo, index) => (
-                <MyStorage key={index}  {...depo} isActive={selectedTotalPrice < cargoPrice} />
-              ))}
+            <div className="form_wrapper w-full grid grid-cols-2 lg:grid-cols-4 gap-3">
+             {depoData.map((depo, index) => (
+  <MyStorage 
+    key={index} 
+    {...depo} 
+    isActive={selectedTotalPrice < cargoPrice} 
+    handleOrderBasket={handleOrderBasket} 
+  />
+))}
 
               <Card shadow='none' className="rounded-2xl mb-3 bg-warning-100">
                 <CardHeader className="bg-white py-2 px-4 rounded-t-2xl">
@@ -225,11 +278,11 @@ export default function Basket(): JSX.Element {
                   </div>
                   <div className="py-2 border-b">
                     <p>Ara Toplam</p>
-                    <p className="font-semibold">{selectedTotalPrice.toFixed(2)}</p>
+                    <p className="font-semibold">{toplamTotal.toFixed(2)}</p>
                   </div>
                   <div className="py-2 border-b">
                     <p>KDV (%20)</p>
-                    <p className="font-semibold">{(selectedTotalPrice * 0.2).toFixed(2)}</p>
+                    <p className="font-semibold">{(toplamTotal * 0.2).toFixed(2)}</p>
                   </div>
                   <div className="py-2 border-b">
                     <p>Kargo Ücreti</p>
@@ -237,7 +290,7 @@ export default function Basket(): JSX.Element {
                   </div>
                   <div className="py-4 border-t font-bold text-lg">
                     <p>Toplam</p>
-                    <p>{(selectedTotalPrice + cargoPrice).toFixed(2)}</p>
+                    <p>{genelToplam.toFixed(2)}</p>
                   </div>
                   {selectedTotalPrice < cargoPrice && (
                     <p className="text-sm text-red-500 text-center mt-2 font-semibold">Siparişi tamamlamak için sepetinize en az 1 ürün eklemelisiniz</p>
@@ -249,6 +302,32 @@ export default function Basket(): JSX.Element {
           </div>
         </div>
       </div>
+
+      {/* Modal */}
+      <Modal isOpen={isModalOpen} onClose={() => { /* boş bırak, modal kapanmasın */ }}backdrop="blur" hideCloseButton>
+        <ModalContent className="text-center space-y-4 px-6 py-4">
+          <ModalHeader className="justify-center">
+            {modalSuccess ? (
+              <CheckCircle size={48} className="text-green-500" />
+            ) : (
+              <XCircle size={48} className="text-red-500" />
+            )}
+          </ModalHeader>
+          <ModalBody>
+            <h2 className="text-xl font-semibold">
+              {modalSuccess ? "İşlem Başarılı" : "İşlem Başarısız"}
+            </h2>
+            <h2 className="text-xl">Sipariş No: {orderNo}</h2>
+            <p className="mt-2 text-sm text-gray-600 dark:text-gray-300">{modalMessage}</p>
+          </ModalBody>
+          <ModalFooter className="justify-center">
+            <Button color="primary" onClick={() => router.push('/')}>
+              Anasayfaya Dön
+            </Button>
+          </ModalFooter>
+        </ModalContent>
+      </Modal>
+
     </GuestLayout>
   );
 }

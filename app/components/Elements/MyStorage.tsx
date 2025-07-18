@@ -5,13 +5,13 @@ import {Input} from "@heroui/input";
 import {Select, SelectSection, SelectItem} from "@heroui/select";
 import Link from 'next/link';
 
-const MyStorage = ({ title, brut, iskonto, toplam, kdv, genelToplam, sevkiyatOptions, sevkiyatNote, isActive }: any) => {
+const MyStorage = ({ title, brut, iskonto, toplam, kdv, genelToplam, sevkiyatOptions, sevkiyatNote, isActive, handleOrderBasket }: any) => {
     return (
         <Card shadow='none' className="rounded-2xl mb-3">
             <CardHeader className="bg-gray-200 py-2 px-4 rounded-t-2xl">
                 <h3 className="text-lg font-semibold text-gray-700">{title}</h3>
             </CardHeader>
-            <CardBody className="p-4 space-y-3">
+            <CardBody className="p-4 space-y-3 h-100 mb-0" style={{height:"max-content"}}>
                 <div className="flex justify-between text-gray-600">
                     <span>Brüt:</span>
                     <span className="font-medium">{brut}₺</span>
@@ -32,7 +32,7 @@ const MyStorage = ({ title, brut, iskonto, toplam, kdv, genelToplam, sevkiyatOpt
                     <span>G.Toplam:</span>
                     <span>{genelToplam}₺</span>
                 </div>
-                <div>
+                {/*<div>
                     <label className="block text-gray-600 mb-1">
                     Sevkiyat:
                     <Select
@@ -48,9 +48,9 @@ const MyStorage = ({ title, brut, iskonto, toplam, kdv, genelToplam, sevkiyatOpt
                     </label>
 
 
-                    {sevkiyatNote && (
+                    sevkiyatNote && (
                         <p className="text-sm text-gray-500 mt-1">{sevkiyatNote}</p>
-                    )}
+                    )
                 </div>
                 <div>
                     <label htmlFor="siparisMesaji" className="block text-gray-600 mb-1">
@@ -62,11 +62,16 @@ const MyStorage = ({ title, brut, iskonto, toplam, kdv, genelToplam, sevkiyatOpt
                     className="w-full"
                     />
 
-                </div>
+                </div>*/}
             </CardBody>
             <CardFooter className="p-4 flex justify-center">
-                <Button as={Link} href="/payment" color="warning" fullWidth isDisabled={isActive}>
-                  Siparişi Tamamla
+                <Button
+                color="warning"
+                fullWidth
+                isDisabled={isActive}
+                onClick={handleOrderBasket}
+                >
+                Siparişi Tamamla
                 </Button>
 
             </CardFooter>

@@ -75,6 +75,13 @@ export const emptyBasket = async (token:string, basketId:number) => {
   await apiClient(`/basket/empty`, "POST", token, params);
 };
 
+export const orderBasket = async (token:string, basketId:number) => {
+  const params = { basket_id: basketId };
+  const response = await apiClient(`/saveorders`, "POST", token, params);
+  return response;
+
+};
+
 export const deleteBasket = async (token:string, basketId:number) => {
   const params = { basket_id: basketId };
   await apiClient(`/basket/destroy`, "POST", token, params);

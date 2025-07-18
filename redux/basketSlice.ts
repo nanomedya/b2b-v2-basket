@@ -5,6 +5,7 @@ import {
   addToBasket,
   removeFromBasket,
   emptyBasket,
+  orderBasket,
   deleteBasket,
   setCurrentBasket as setCurrentBasketService,
 } from "@/api/services/basketService";
@@ -97,6 +98,21 @@ export const deleteBasketAsync = createAsyncThunk(
     return response;
   }
 );
+
+export const orderBasketAsync = createAsyncThunk(
+  "basket/emptyBasket",
+  async ({ token, currentBasketId }: { token: string, currentBasketId: number }) => {
+    const response = await orderBasket(token, currentBasketId);
+
+    if (!response || response.error) {
+      throw new Error(response?.message || "Sipariş başarısız oldu.");
+    }
+
+    return response;
+  }
+);
+
+
 
 // Slice
 const basketSlice = createSlice({
